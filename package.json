@@ -1,0 +1,26 @@
+{
+  "name": "aranha",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pehuenmoure/aranha.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pehuenmoure/aranha/issues"
+  },
+  "homepage": "https://github.com/pehuenmoure/aranha#readme",
+  "dependencies": {
+    "express": "^4.14.0",
+    "request": "^2.79.0",
+    "serialport": "^4.0.7",
+    "socket.io": "^1.7.2"
+  }
+}

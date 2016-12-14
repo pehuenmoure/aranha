@@ -1,0 +1,147 @@
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+	<script src="js/socket.io.js"></script>
+
+	<script type="text/javascript">
+		var socket = io();
+		var rec = null;
+
+		function startRecognition(){
+			if (!('webkitSpeechRecognition' in window)) {
+				document.body.style = 'background-color: white; text-align: center; padding-top:100px';
+				document.body.innerHTML = 'Sorry, your browser does not support speech recognition. Try downloading <a href="https://www.google.com/chrome/browser">Google Chrome</a>. If you are using Google Chrome, try refreshing the page.';
+		        console.log('no webkit');
+		        upgrade();
+		        return;
+		    } 
+
+			rec = new webkitSpeechRecognition();
+	        rec.continuous = false;
+	        rec.interimResults = true;
+	        rec.maxAlternatives = 3;
+
+	        rec.onstart = function() {
+	            console.log('starting');
+	        };
+
+	        rec.onaudioend = function(event){
+	        	//console.log('end audio');
+	        	// console.log(event);
+	        }
+
+	        rec.onerror = function(event) {
+	            console.log(event.error);
+	            console.log(event);  
+	        };
+
+	        rec.onresult = function(event) { 
+	            if (typeof(event.results) == 'undefined') {
+	                console.log('error');
+	                rec.onend = null;
+	                rec.stop();
+	                upgrade();
+	                return;
+	            } 
+
+	            for (var i = event.resultIndex; i < event.results.length; ++i) {
+	                var speechOut = event.results[i][0].transcript;
+	                console.log(speechOut);
+	                if (event.results[i].isFinal) {
+	                	// console.log(event.results[i]);
+		                setLatest(speechOut);
+		                finishLatest();
+		        	} else {
+		        		setLatest(speechOut);
+		        	}
+	            }
+	        };
+
+	        rec.onend = function(event){
+	        	rec.start();
+	        }
+
+	        rec.start();
+		}
+
+		function stopRecognition(){
+			rec.onend = null;
+			rec.stop();
+		}
+
+		function setLatest(text){
+			var latest = $('#new');
+			if(!latest.length){
+				$('#speech-container').append('<div id="new"></div>');
+			}
+			$('#new').html(text);
+		}
+
+		function finishLatest(){
+			socket.emit('ai-request', $('#new').html());
+			$('#new').attr('id', '');
+		}
+
+		socket.on('ai-response', function(msg){
+			$('#speech-container').append('<div><i>' + msg.text + '<i></div>');
+			say(msg.lang, msg.text);
+		});
+
+		function say(lang, text){
+			var msg = new SpeechSynthesisUtterance();
+			msg.text = text;
+			msg.lang = lang;
+			var voices = window.speechSynthesis.getVoices();
+			for(var v in voices){
+				// console.log(voices[v]);
+				if(voices[v].lang.includes(lang)){
+					msg.voice = voices[v];
+					break;
+				}
+			}
+
+			msg.onstart = function(evt){
+				stopRecognition();
+			}
+
+			msg.onend = function(evt){
+				startRecognition();
+			}
+
+			speechSynthesis.speak(msg);
+		}
+
+		$(document).ready(function(){
+			startRecognition();
+
+			window.speechSynthesis.getVoices();
+
+			$("#send-input").keyup(function(event){
+			    if(event.keyCode == 13){
+			        $("#send-button").click();
+			    }
+			});
+
+			$('#send-button').click(function(evt){
+				var input = $("#send-input").val();
+				$("#send-input").val('');
+				setLatest(input);
+				finishLatest();
+			});
+
+			socket.on('ai-ready', function(msg){
+				setLatest('{start}');
+				finishLatest();
+			});
+		});
+	</script>
+</head>
+<body>
+	<div>
+		<input id="send-input" type="text" name="">
+		<button id="send-button">send</button>
+	</div>
+	<div id='speech-container'>
+		
+	</div>
+</body>
